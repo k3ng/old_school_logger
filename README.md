@@ -114,3 +114,79 @@ Current Contact Details:
 
 > 
 ```
+
+Arguments can be used with the v command:
+
+v 7 : Show contact #7
+
+v 6-8 : Show contacts # 6 through 8
+
+v +10 : Show first ten contacts
+
+v -10 : Show last ten contacts
+
+
+Logged contacts can be edited using the u command, like so:
+
+```plaintext
+K3NG's Old School Logger
+2024.12.06.16.00
+
+
+Current Contact Details:
+  Callsign Worked: 
+  Frequency: 
+  Sent Report: 
+  Received Report: 
+  Mode: 
+  Contact Date: 2024-12-08
+  Contact Time: 16:09
+  Note: 
+
+> u 1
+Contact ID 1 loaded into current fields.
+You can now edit the current fields and use 'l' to save the changes.
+
+Current Contact Details:
+  Callsign Worked: W3HCW
+  Frequency: 14025
+  Sent Report: 
+  Received Report: 
+  Mode: LSB
+  Contact Date: 2024-11-24
+  Contact Time: 09:52
+  Note: 1 | test 1 2 3
+> s 59
+Sent report set to '59'.
+
+Current Contact Details:
+  Callsign Worked: W3HCW
+  Frequency: 14025
+  Sent Report: 59
+  Received Report: 
+  Mode: LSB
+  Contact Date: 2024-11-24
+  Contact Time: 09:52
+  Note: 1 | test 1 2 3
+
+> l
+Contact has been logged to the database.
+Ready for a new contact.
+```
+
+What's Next?
+
+I'm planning to add the following in the future:
+
+More Fields
+
+More Search Capabilities for the View Command
+
+ADIF Import
+
+Direct SQL Queries
+
+FCC Database Call Lookup
+
+
+
