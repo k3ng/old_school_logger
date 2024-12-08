@@ -180,17 +180,26 @@ I'm planning to add the following in the future:
 
 More Fields
 
+Multiple Database File Support
+
 More Search Capabilities for the View Command
 
 ADIF Import
 
-Direct SQL Queries
+Direct Database File SQL Queries
 
 UTC & Local Timezone Handling
 
 MHz & kHz Frequency Handling
 
-FCC Database Call Lookup
+QSL Tracking
+
+Award Tracking
+
+Callsign Database Lookup
+
+Operations Via Executable Command Line Arguments
+
 
 
 
