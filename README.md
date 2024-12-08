@@ -10,8 +10,8 @@ To run the logging:
 
 You'll be initially presented with something like this:
 
-K3NG's Old School Logger
-2024.12.06.16.00
+`K3NG's Old School Logger
+`2024.12.06.16.00
 
 
 Current Contact Details:
