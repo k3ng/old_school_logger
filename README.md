@@ -186,6 +186,10 @@ ADIF Import
 
 Direct SQL Queries
 
+UTC & Local Timezone Handling
+
+MHz & kHz Frequency Handling
+
 FCC Database Call Lookup
 
 
