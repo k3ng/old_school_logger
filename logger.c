@@ -23,7 +23,7 @@
 #include <sqlite3.h> // For SQLite3 database functions
 
 #define INPUT_BUFFER_SIZE 256
-#define CODE_VERSION "2024.12.06.16.00"
+#define CODE_VERSION "2024.12.14.16.00"
 
 
 // Define a structure to hold contact details
@@ -491,23 +491,58 @@ int main() {
                         token = NULL;
                     }
                     break;
+
                 case 'd': {
-                    token = strtok(NULL, " "); // Get the provided date or NULL if none is provided
-                    if (token) {
-                        // Validate the input format (YYYY-MM-DD)
-                        int year, month, day;
-                        if (sscanf(token, "%4d-%2d-%2d", &year, &month, &day) == 3 &&
-                            year >= 1900 && year <= 2100 &&
-                            month >= 1 && month <= 12 &&
-                            day >= 1 && day <= 31) {
-                            // Valid date provided
-                            snprintf(current_contact.contact_date, sizeof(current_contact.contact_date), "%04d-%02d-%02d", year, month, day);
-                            printf("Contact date set to '%s'.\n", current_contact.contact_date);
+                    // Check if there's a space or directly appended date
+                    token = strtok(NULL, " ");
+                    if (!token) {
+                        token = &input[1]; // Skip the 'd' character and use the rest of the input
+                    }
+
+                    if (token && strlen(token) > 0) {
+                        int year = -1, month = -1, day = -1;
+
+                        if (strchr(token, '-')) {
+                            // Handle formats like YYYY-MM-DD
+                            if (sscanf(token, "%4d-%2d-%2d", &year, &month, &day) == 3 &&
+                                year >= 1900 && year <= 2100 &&
+                                month >= 1 && month <= 12 &&
+                                day >= 1 && day <= 31) {
+                                snprintf(current_contact.contact_date, sizeof(current_contact.contact_date), "%04d-%02d-%02d", year, month, day);
+                                printf("Contact date set to '%s'.\n", current_contact.contact_date);
+                                break;
+                            } else {
+                                printf("Error: Invalid date format. Use YYYY-MM-DD.\n");
+                            }
+                        } else if (strchr(token, '/')) {
+                            // Handle formats like YYYY/MM/DD
+                            if (sscanf(token, "%4d/%2d/%2d", &year, &month, &day) == 3 &&
+                                year >= 1900 && year <= 2100 &&
+                                month >= 1 && month <= 12 &&
+                                day >= 1 && day <= 31) {
+                                snprintf(current_contact.contact_date, sizeof(current_contact.contact_date), "%04d-%02d-%02d", year, month, day);
+                                printf("Contact date set to '%s'.\n", current_contact.contact_date);
+                                break;
+                            } else {
+                                printf("Error: Invalid date format. Use YYYY/MM/DD.\n");
+                            }
+                        } else if (strlen(token) == 8) {
+                            // Handle formats like YYYYMMDD
+                            if (sscanf(token, "%4d%2d%2d", &year, &month, &day) == 3 &&
+                                year >= 1900 && year <= 2100 &&
+                                month >= 1 && month <= 12 &&
+                                day >= 1 && day <= 31) {
+                                snprintf(current_contact.contact_date, sizeof(current_contact.contact_date), "%04d-%02d-%02d", year, month, day);
+                                printf("Contact date set to '%s'.\n", current_contact.contact_date);
+                                break;
+                            } else {
+                                printf("Error: Invalid date format. Use YYYYMMDD.\n");
+                            }
                         } else {
-                            printf("Error: Invalid date format. Use YYYY-MM-DD (e.g., 2024-11-24).\n");
+                            printf("Error: Unrecognized date format.\n");
                         }
                     } else {
-                        // No date provided, set to today's date
+                        // If no valid date was provided, set to today's date
                         get_current_date(current_contact.contact_date, sizeof(current_contact.contact_date));
                         printf("Contact date set to today's date: '%s'.\n", current_contact.contact_date);
                     }
@@ -710,28 +745,76 @@ int main() {
                         printf("Error: Sent report not provided.\n");
                     }
                     break;
+
                 case 't': {
-                    token = strtok(NULL, " "); // Get the provided time or NULL if none is provided
-                    if (token) {
-                        // Validate the input format (HH:MM or HH:MM:SS)
-                        int hours, minutes, seconds = 0;
-                        if (sscanf(token, "%2d:%2d:%2d", &hours, &minutes, &seconds) >= 2 &&
-                            hours >= 0 && hours <= 23 &&
-                            minutes >= 0 && minutes <= 59 &&
-                            seconds >= 0 && seconds <= 59) {
-                            // Valid time provided
-                            snprintf(current_contact.contact_time, sizeof(current_contact.contact_time), "%02d:%02d", hours, minutes);
-                            printf("Contact time set to '%s'.\n", current_contact.contact_time);
+                    // Check if there's a space or directly appended time
+                    token = strtok(NULL, " ");
+                    if (!token) {
+                        token = &input[1]; // Skip the 't' character and use the rest of the input
+                    }
+
+                    if (token && strlen(token) > 0) {
+                        int hours = -1, minutes = 0, seconds = 0; // Default values for time
+
+                        if (strchr(token, ':')) {
+                            // Handle formats like HH:MM:SS or HH:MM
+                            int count = sscanf(token, "%2d:%2d:%2d", &hours, &minutes, &seconds);
+                            if ((count == 2 || count == 3) &&
+                                hours >= 0 && hours <= 23 &&
+                                minutes >= 0 && minutes <= 59 &&
+                                seconds >= 0 && seconds <= 59) {
+                                snprintf(current_contact.contact_time, sizeof(current_contact.contact_time), "%02d:%02d:%02d", hours, minutes, seconds);
+                                printf("Contact time set to '%s'.\n", current_contact.contact_time);
+                                break;
+                            } else {
+                                printf("Error: Invalid time format. Use HH:MM or HH:MM:SS.\n");
+                            }
+                        } else if (strlen(token) == 6) {
+                            // Handle HHMMSS format
+                            if (sscanf(token, "%2d%2d%2d", &hours, &minutes, &seconds) == 3 &&
+                                hours >= 0 && hours <= 23 &&
+                                minutes >= 0 && minutes <= 59 &&
+                                seconds >= 0 && seconds <= 59) {
+                                snprintf(current_contact.contact_time, sizeof(current_contact.contact_time), "%02d:%02d:%02d", hours, minutes, seconds);
+                                printf("Contact time set to '%s'.\n", current_contact.contact_time);
+                                break;
+                            } else {
+                                printf("Error: Invalid time format. Use HHMMSS.\n");
+                            }
+                        } else if (strlen(token) == 4) {
+                            // Handle HHMM format
+                            if (sscanf(token, "%2d%2d", &hours, &minutes) == 2 &&
+                                hours >= 0 && hours <= 23 &&
+                                minutes >= 0 && minutes <= 59) {
+                                snprintf(current_contact.contact_time, sizeof(current_contact.contact_time), "%02d:%02d:%02d", hours, minutes, 0);
+                                printf("Contact time set to '%s'.\n", current_contact.contact_time);
+                                break;
+                            } else {
+                                printf("Error: Invalid time format. Use HHMM.\n");
+                            }
+                        } else if (strlen(token) == 2) {
+                            // Handle HH format (assume 00 minutes and 00 seconds)
+                            if (sscanf(token, "%2d", &hours) == 1 && hours >= 0 && hours <= 23) {
+                                snprintf(current_contact.contact_time, sizeof(current_contact.contact_time), "%02d:%02d:%02d", hours, 0, 0);
+                                printf("Contact time set to '%s'.\n", current_contact.contact_time);
+                                break;
+                            } else {
+                                printf("Error: Invalid time format. Use HH.\n");
+                            }
                         } else {
-                            printf("Error: Invalid time format. Use HH:MM or HH:MM:SS (e.g., 14:30 or 14:30:15).\n");
+                            printf("Error: Unrecognized time format.\n");
                         }
                     } else {
-                        // No time provided, set to the current time
+                        // If no valid time was provided, set to the current time
                         get_current_time(current_contact.contact_time, sizeof(current_contact.contact_time));
                         printf("Contact time set to current time: '%s'.\n", current_contact.contact_time);
                     }
                     break;
                 }
+
+
+
+
 
                 case 'u': {
                     token = strtok(NULL, " "); // Get the ID
