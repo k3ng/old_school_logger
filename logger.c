@@ -23,7 +23,7 @@
 #include <sqlite3.h> // For SQLite3 database functions
 
 #define INPUT_BUFFER_SIZE 256
-#define CODE_VERSION "2024.12.14.16.00"
+#define CODE_VERSION "2024.12.14.16.01"
 
 
 // Define a structure to hold contact details
@@ -577,71 +577,87 @@ int main() {
                 case 'h':
                     display_help();
                     break;
-                case 'i': {
-                    token = strtok(NULL, " "); // Get the filename
-                    if (token) {
-                        FILE *file = fopen(token, "w");
-                        if (!file) {
-                            printf("Error: Unable to open file '%s' for writing.\n", token);
-                            break;
-                        }
 
-                        // Open the database
-                        sqlite3 *db;
-                        sqlite3_stmt *stmt;
-                        const char *sql = "SELECT callsign, frequency, mode, sent_report, received_report, date_time, comment FROM contacts";
-                        if (sqlite3_open(db_name, &db) != SQLITE_OK) {
-                            fprintf(stderr, "Error: Cannot open database: %s\n", sqlite3_errmsg(db));
-                            fclose(file);
-                            break;
-                        }
 
-                        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
-                            fprintf(stderr, "Error: Failed to prepare SQL statement: %s\n", sqlite3_errmsg(db));
-                            sqlite3_close(db);
-                            fclose(file);
-                            break;
-                        }
 
-                        // Write ADIF header
-                        fprintf(file, "ADIF Export\n<EOH>\n");
+case 'i': {
+    token = strtok(NULL, " "); // Get the filename
+    if (token) {
+        FILE *file = fopen(token, "w");
+        if (!file) {
+            printf("Error: Unable to open file '%s' for writing.\n", token);
+            break;
+        }
 
-                        // Process each row and write in ADIF format
-                        while (sqlite3_step(stmt) == SQLITE_ROW) {
-                            const char *callsign = (const char *)sqlite3_column_text(stmt, 0);
-                            const char *frequency = (const char *)sqlite3_column_text(stmt, 1);
-                            const char *mode = (const char *)sqlite3_column_text(stmt, 2);
-                            const char *sent_report = (const char *)sqlite3_column_text(stmt, 3);
-                            const char *received_report = (const char *)sqlite3_column_text(stmt, 4);
-                            const char *date_time = (const char *)sqlite3_column_text(stmt, 5);
-                            const char *comment = (const char *)sqlite3_column_text(stmt, 6);
+        // Open the database
+        sqlite3 *db;
+        sqlite3_stmt *stmt;
+        const char *sql = "SELECT callsign, frequency, mode, sent_report, received_report, date_time, comment FROM contacts";
+        if (sqlite3_open(db_name, &db) != SQLITE_OK) {
+            fprintf(stderr, "Error: Cannot open database: %s\n", sqlite3_errmsg(db));
+            fclose(file);
+            break;
+        }
 
-                            // Split date and time
-                            char date[9], time[7];
-                            sscanf(date_time, "%8s %6s", date, time);
+        if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+            fprintf(stderr, "Error: Failed to prepare SQL statement: %s\n", sqlite3_errmsg(db));
+            sqlite3_close(db);
+            fclose(file);
+            break;
+        }
 
-                            // Write ADIF entry
-                            fprintf(file,
-                                    "<CALL:%zu>%s <FREQ:%zu>%s <MODE:%zu>%s <RST_SENT:%zu>%s <RST_RCVD:%zu>%s <QSO_DATE:%zu>%s <TIME_ON:%zu>%s <COMMENT:%zu>%s <EOR>\n",
-                                    strlen(callsign), callsign,
-                                    strlen(frequency), frequency,
-                                    strlen(mode), mode,
-                                    strlen(sent_report), sent_report,
-                                    strlen(received_report), received_report,
-                                    strlen(date), date,
-                                    strlen(time), time,
-                                    comment ? strlen(comment) : 0, comment ? comment : "");
-                        }
+        // Write ADIF header
+        fprintf(file, "<ADIF_VER:5>3.1.2\n");
+        fprintf(file, "PROGRAMID:OSL\n");
+        fprintf(file, "PROGRAMVERSION:%s\n\n", CODE_VERSION);
 
-                        sqlite3_finalize(stmt);
-                        sqlite3_close(db);
-                        fclose(file);
-                        printf("Database exported to '%s' in ADIF format.\n", token);
-                    } else {
-                        printf("Error: No filename provided. Usage: i <filename>\n");
-                    }
-                    break;
-                }
+        // Process each row and write in ADIF format
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char *callsign = (const char *)sqlite3_column_text(stmt, 0);
+            const char *frequency = (const char *)sqlite3_column_text(stmt, 1);
+            const char *mode = (const char *)sqlite3_column_text(stmt, 2);
+            const char *sent_report = (const char *)sqlite3_column_text(stmt, 3);
+            const char *received_report = (const char *)sqlite3_column_text(stmt, 4);
+            const char *date_time = (const char *)sqlite3_column_text(stmt, 5);
+            const char *comment = (const char *)sqlite3_column_text(stmt, 6);
+
+            // Parse date_time to extract date (YYYYMMDD) and time (HHMM)
+            char date[9] = "";
+            char time[5] = "";
+            int year, month, day, hour, minute;
+            if (sscanf(date_time, "%4d-%2d-%2d %2d:%2d", &year, &month, &day, &hour, &minute) == 5) {
+                snprintf(date, sizeof(date), "%04d%02d%02d", year, month, day); // Format as YYYYMMDD
+                snprintf(time, sizeof(time), "%02d%02d", hour, minute);         // Format as HHMM
+            } else {
+                printf("Error: Invalid date_time format in database: '%s'\n", date_time);
+                continue;
+            }
+
+            // Write ADIF entry
+            fprintf(file,
+                    "<QSO_DATE:8>%s <TIME_ON:4>%s <CALL:%d>%s "
+                    "<MODE:%d>%s "
+                    "<RST_SENT:%d>%s <RST_RCVD:%d>%s <COMMENT:%d>%s <EOR>\n",
+                    date,
+                    time,
+                    (int)strlen(callsign), callsign,
+                    (int)strlen(mode), mode,
+                    (int)strlen(sent_report), sent_report,
+                    (int)strlen(received_report), received_report,
+                    comment ? (int)strlen(comment) : 0, comment ? comment : "");
+        }
+
+
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        fclose(file);
+        printf("Database exported to '%s' in ADIF format.\n", token);
+    } else {
+        printf("Error: No filename provided. Usage: i <filename>\n");
+    }
+    break;
+}
+
 
                 case 'l':
                     if (log_contact(db_name, &current_contact) == SQLITE_OK) {
